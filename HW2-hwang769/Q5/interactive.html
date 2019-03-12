@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+	<meta charset="utf-8"></meta>
+    <script src="../lib/d3.v5.min.js"></script>
+	<style type="text/css">
+    body {
+    margin: 15px;
+    background-color: #F1F3F3    
+    }
+    .bar {
+        fill: #6F257F;
+    }
+    .axis path,
+    .axis line {
+    fill: none;
+    stroke:none;
+    stroke-width: 1px;
+    shape-rendering: crispEdges;
+    }
+    .x path {
+        display: none;
+    }
+    .toolTip {
+    position: absolute;
+    display: none;
+    min-width: 80px;
+    height: auto;
+    background: none repeat scroll 0 0 #ffffff;
+    border: 1px solid #6F257F;
+    padding: 14px;
+    text-align: center;
+    }
+    </style>
+	<body>
+    <script type="text/javascript">
+    // input data
+    var data=[{country: 'Bangladesh', population_2012: 105905297, growth: {year_2013:42488 , year_2014:934 , year_2015:52633 , year_2016:112822 , year_2017:160792}},
+        {country: 'Ethopia', population_2012: 75656319, growth: {year_2013:1606010 , year_2014:1606705 , year_2015:1600666 , year_2016:1590077 , year_2017:1580805}},
+        {country: 'Kenya', population_2012: 33007327, growth: {year_2013:705153 , year_2014:703994 , year_2015:699906 , year_2016:694295 , year_2017:687910}},
+        {country: 'Afghanistan', population_2012: 23280573, growth: {year_2013:717151 , year_2014:706082 , year_2015:665025 , year_2016:616262 , year_2017:573643}},
+        {country: 'Morocco', population_2012: 13619520, growth: {year_2013:11862 , year_2014:7997 , year_2015:391 , year_2016:-8820 , year_2017:-17029}}];
+    
+    newData = []
+    data.forEach(function(d){
+        newData.push({
+            country: d.country,
+            mySum: ((+d.population_2012) + (+d.growth.year_2013)+ (+d.growth.year_2014) + (+d.growth.year_2015)+ (+d.growth.year_2016)+ (+d.growth.year_2017))
+        })
+    });
+    newData.sort(function(a, b){ return a.mySum - b.mySum});
+    //console.log(newData);
+
+    percent = []
+    data.forEach(function(d){
+        percent.push({
+            country: d.country,
+            mySum: ((+d.population_2012) + (+d.growth.year_2013)+ (+d.growth.year_2014) + (+d.growth.year_2015)+ (+d.growth.year_2016)+ (+d.growth.year_2017)),
+            growth:[
+                [2013, ((+d.growth.year_2013)/(+d.population_2012) * 100)],
+                [2014, ((+d.growth.year_2014)/((+d.population_2012)+ (+d.growth.year_2013))*100)],
+                [2015, ((+d.growth.year_2015)/((+d.population_2012)+ (+d.growth.year_2013)+(+d.growth.year_2014))*100)],
+                [2016, ((+d.growth.year_2016)/((+d.population_2012)+ (+d.growth.year_2013)+(+d.growth.year_2014)+(+d.growth.year_2015))*100)],
+                [2017, ((+d.growth.year_2017)/((+d.population_2012)+ (+d.growth.year_2013)+(+d.growth.year_2014)+(+d.growth.year_2015)+(+d.growth.year_2016))*100)]]
+        })
+    });
+    percent.sort(function(a, b){ return a.mySum - b.mySum});
+    //console.log(percent)
+    
+    var margin = {top: 20, right: 230, bottom: 50, left: 200};
+    var width = 1000 - margin.left - margin.right;
+    var height = 400 - margin.top - margin.bottom;
+
+    var svg = d3.select("body")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
+
+    
+    var x = d3.scaleLinear().range([0, width]);
+    var y = d3.scaleBand().range([height, 0]);
+
+    var g = svg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    x.domain([0, d3.max(percent, function(d){ return d.mySum; })]);
+    y.domain(percent.map(function(d){ return d.country; })).padding(0.1);
+    //console.log(x.domain())
+    //console.log(y.domain())
+  
+
+    var bars = svg.selectAll(".bar")
+        .data(percent)
+        .enter()
+        .append("g")
+    
+    bars.append("g")
+        .attr("class", "x axis")
+       	.attr("transform", "translate(0," + height + ")")
+      	
+    
+    var yAxis = d3.axisLeft(y)
+            .scale(y)
+            //no tick marks
+            .tickSize(0)
+
+    bars.append("g")
+            .attr("class", "y axis")
+            .call(yAxis)
+
+    bars.append("rect")
+        .attr("class", "bar")
+        .attr("x", 0)
+        .attr("height", y.bandwidth())
+        .attr("y", function(d){ return y(d.country); })
+        .attr("width", function(d){return x(d.mySum)})
+        .style("fill", "grey")
+        .on("mouseover", onChart)
+        .on("mouseout", offChart);
+ 
+  
+    
+    var formatNumber = d3.format(",.0f");    // zero decimal places
+       
+    bars.append("text")
+        .attr("class", "label")
+        //y positions of the label is halfway down the bar
+        .attr("y", function(d){
+            return y(d.country) + y.bandwidth()/2+4;
+        })
+        //x position is 3 pixels to the left of the bar
+        .attr("x", function(d){
+            return 3;
+        })
+        .style("fill", "white")
+        .text(function(d){
+            return formatNumber(d.mySum);
+        });
+
+    function onChart(data){
+        d3.selectAll(".lchart").remove();
+        d3.select(this).style("fill", "teal");
+        // create a class for the line chart
+        var lchart = svg.append("svg")
+            .attr("class", "lchart")
+            .attr("height", height + margin.top + margin.bottom)
+            .attr("width", width + margin.left + margin.right)
+            .append("g")
+            .attr("transform", "translate(500,150)");
+        //create x axis and y axis for line chart
+
+
+        var x2 = d3.scaleLinear().domain([2013, 2017]).range([0, 150]);
+        var y2 = d3.scaleLinear().domain([d3.min(data.growth, function(d){
+            return d[1]; }), d3.max(data.growth, function(d){return d[1]; })])
+            .range([120, 0]);
+        
+        //console.log(x2.domain())
+        //console.log(y2.domain())
+        // Add the x axis
+       var xAxis2 = d3.axisBottom(x2)
+                    .ticks(5)
+                    .tickFormat(d3.format("d"));
+
+            
+
+        lchart.append("g")
+            .attr("class","axis2")
+            .attr("transform", "translate(0, 120)")
+            .call(xAxis2)
+            .append("text")
+            .attr("fill", "#000")
+            .attr("x", 150)
+            .attr("text-anchor", "start")
+            .text("Year");
+        // Add the Y axis
+        lchart.append("g")
+            .call(d3.axisLeft(y2))
+            .append("text")
+            .attr('fill', "#000")
+            .attr("y", -10)
+            .attr("text-anchor", "end")
+            .text("pct(%)");
+        
+        var line = d3.line()
+            .x(function(d){ return x2(d[0]);})
+            .y(function(d){ return y2(d[1]);});
+        lchart.append("path")
+            .attr("d", line(data.growth))
+            .style("stroke", "teal")
+            .style("stoke-width", 2)
+            .style("fill", "none");
+    
+    };
+
+    function offChart(){
+        d3.selectAll('.lchart').remove();
+        d3.select(this).style("fill", "grey");
+    }
+    </script>
+    </body>
+</html>

@@ -1,0 +1,2 @@
+a.2. Win+Nominations vs Rating is better at seperating the two classes. The two clusters are more linear-separable in this case.
+c. when data is in a big range, using log or square root scale show the percentage change of y-axis value. Therefore it is easier to visualize the difference between 2 classes.

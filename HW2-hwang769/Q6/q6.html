@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="../lib/d3.v5.min.js"></script>
+<script src="../lib/topojson.v2.min.js"></script>
+<style>
+
+/* TODO Add styles */
+
+</style>
+<body>
+<script>
+
+
+// See http://datawanderings.com/2018/08/15/d3-js-v5-promise-syntax-examples/
+
+// Get the data
+var us_map_data = d3.json('us.json')
+var county_poverty_data = d3.csv('county_poverty.csv').then(function(data) { return data; });
+var county_detail_data = d3.csv('county_detail.csv').then(function(data) { return data; });
+
+// Return an array with CensusId and Poverty rate
+var id_rate = county_poverty_data.then(function(value) {
+                 return Promise.all(value.map(function(results){
+                    return {id: results.CensusId,
+                            poverty_rate: results.Poverty,
+                            state: results.State,
+                            county: results.County}; 
+                 }))
+              });
+
+// Return an array with other data
+var id_details = county_detail_data.then(function(value) {
+                 return Promise.all(value.map(function(results){
+                    return {id: results.CensusId,
+                           total_pop: results.TotalPop, 
+                           income_per_cap: results.IncomePerCap}; 
+                 }))
+              });
+
+// Set up a color scale
+// TODO, get the max value automatically?
+// append a color bar
+var colorScale = d3.scaleLinear().domain([0, 18])
+        //.interpolate(d3.interpolateHcl)
+        .range([d3.rgb("#90FFB0"), d3.rgb('#000000')]);
+
+
+
+/* Could also do
+var colorScale = d3.scaleSequential()
+  .interpolator(d3.interpolateGreens)
+  .domain([2, 18]);
+*/
+
+// Draws the county map of the US
+var margin = {top: 120, bottom:50, left: 50, right : 50};
+var width = 1200 - margin.left - margin.right,
+    height = 1000 - margin.top - margin.bottom;
+var path = d3.geoPath();
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+// Combine both the map data, poverty rates, and other data
+Promise.all([us_map_data, id_rate, id_details]).then(function(valArray) {
+    topology = valArray[0];
+    //console.log("topojson", topology)
+    var geojson = topojson.feature(topology, topology.objects.counties);
+    //console.log("geojson", geojson)
+    var colorByPoverty = function(d) {
+      return colorScale(valArray[1].find(function(o) {return o.id == d.id; }).poverty_rate);
+    }
+    var getProperties = function(d) {
+      data1 = valArray[1].find(function(o) { return o.id == d.id; })
+      data2 = valArray[2].find(function(o) { return o.id == d.id; })
+      return {state: data1.state,
+             county: data1.county,
+             poverty_rate: data1.poverty_rate,
+             total_pop: data2.total_pop,
+             income_per_cap: data2.income_per_cap};
+    }
+
+    var handleMouseOver = function(d,i) {
+      // TODO Turn this into a hovering tool tip
+      properties = getProperties(d);
+      console.log(properties)
+      var coordinates= d3.mouse(this);
+      var x = coordinates[0];
+      var y = coordinates[1];
+      svg.append("rect")
+          .attr("id", "tooltip_" + d.id)
+          .attr("x", x + 10)
+          .attr("y", y + 10)
+          .attr("width", 200)
+          .attr("height", 100)
+          .style("opacity", 0.5)
+          .style("fill", "#f46d43");
+      svg.append("text")
+          .attr("id", "tooltip_" + d.id)
+          .attr("x", x + 30)
+          .attr("y", y + 30)
+          .attr("font-family","sans-serif")
+          .attr("font-size", "12px")
+          .style("opacity", 1.0)
+          .attr('class', 'id')
+          .append('tspan')
+          .attr('x', x + 30)
+          .attr('dy', 5)
+          .text(function(d) { return "State: " + properties.state; })
+          .append('tspan')
+          .attr('x', x + 30)
+          .attr('dy', 15)
+          .text(function(d) { return "County: " + properties.county; })
+          .append('tspan')
+          .attr('x', x + 30)
+          .attr('dy', 15)
+          .text(function(d) { return "Poverty Rate: " + properties.poverty_rate + "%"; })
+          .append('tspan')
+          .attr('x', x + 30)
+          .attr('dy', 15)
+          .text(function(d) { return "Total Population: " + properties.total_pop; })
+          .append('tspan')
+          .attr('x', x + 30)
+          .attr('dy', 15)
+          .text(function(d) { return "Income Per Capita: $" + properties.income_per_cap; })
+      
+      
+    }
+    var handleMouseOut = function(d,i) {
+      d3.select("text#tooltip_" + d.id).remove();
+      d3.select("rect#tooltip_" + d.id).remove();
+    }
+    // Draw the states
+    svg.selectAll("path")
+        .data(geojson.features)
+        .enter().append("path")
+                .attr("d", path)
+                .style("fill", colorByPoverty)
+                .on("mouseover", handleMouseOver)
+                .on("mouseout", handleMouseOut);
+    svg.append("text")
+        .attr("class", "caption")
+        .attr("x", width/2- 200)
+        .attr("y", 20)
+        .attr("fill", "#000")
+        .attr("font-size", "20px")
+        .attr("text-anchor", "start")
+        .attr("font-weight", "bold")
+        .text("Choropleth Map of Country Data")
+    svg.append("text")
+        .attr("class", "caption")
+        .attr("x", width - 150)
+        .attr("y", 20)
+        .attr("fill", "#000")
+        .attr("font-size", "16px")
+        .attr("text-anchor", "start")
+        .text("Poverty Rate")
+    var legend = svg.selectAll(".legend")
+				 	.data(colorScale.ticks(9).slice(1))
+				 	.enter()
+				 	.append("g")
+				 	.attr("class", "legend")
+				 	.attr("transform", function(d, i){
+				 		return "translate(" + (width-150)+ ", "
+				 		+(30+i*30)+")";
+           });
+      legend.append("rect")
+                .attr("width", 40)
+                .attr("height", 30)
+                .style("fill", colorScale);
+      legend.append("text")
+                .attr("x",70)
+                .attr("y",18)
+                .attr("dy", ".35em")
+                .text("%");
+      legend.append("text")
+                .attr("x",55)
+                .attr("y",18)
+                .attr("dy", ".35em")
+                .text(String);
+
+                
+});
+
+
+</script>
+</body>
+</html>

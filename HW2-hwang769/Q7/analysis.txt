@@ -1,0 +1,24 @@
+1. Ease to develop
+    seaborn: middle, need to know the basic of programming skills using python, and has some pre-built format.
+    Tableau: easy to learn, having pre-built chart, users just need to load the data and drag the columns around
+    D3: long develop time, require skills to start learning, and it doesn't have pre-built chart. 
+
+2. Ease to maintain the visualization 
+    seaborn: middle. might need to upgrade packages. 
+    Tableau: easy to maintain.
+    D3: integrate on websites, maintain not easy.
+
+3. Usability of visualization developed for end users
+    seaborn: good. simple and direct data visualization
+    Tableau: middle. User can build dashboard and pipeline which can automatic analyze new data.
+    D3: Best. User can interact with the graph, and the graph can be dynamic.
+
+4. Scalability of visualization to "large" datasets
+    seaborn: can be bad. usually run on local machine. Handle "large" datasets can be limited by the memory of the local machine
+    Tableau: best. Tableau can handle large dataset using remote server.
+    D3:not that good. SVG has performance limitations when dealing with "large" dataset
+
+5. System requirements to run the visualization for end users
+    seaborn: simple and no cost. Need to download python programming environment and packages.
+    Tableau: expensive. Need to buy license for usage.
+    D3: simple and no cost. Need to download d3 packages and HTML code editor.

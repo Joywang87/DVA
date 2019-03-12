@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="../lib/d3.v5.min.js"></script>
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.select {
+    margin: 0 auto;
+}
+
+.label {
+  font-weight: bold;
+}
+
+.tile {
+  shape-rendering: crispEdges;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: none;
+  shape-rendering: crispEdges;
+}
+</style>
+<body>  <div style="z-index: 10; position: absolute; top: 35px; left: 650px">
+    Year:  
+        <select id="opts">
+                <option value="data_2011" align="center">2011</option>
+                <option value="data_2012" align="center">2012</option>
+                <option value="data_2013" align="center">2013</option>
+                <option value="data_2014" align="center">2014</option>
+                <option value="data_2015" align="center">2015</option>
+        </select></div>
+<script type="text/javascript">
+
+
+// set the dimensions and margins of the graph
+var margin = {top: 20, right: 150, bottom: 30, left: 100},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+// catergorical xaxis and yaxis
+var x = d3.scaleBand().range([50, width-50]);
+var y = d3.scaleBand().range([height-40, 50]);
+var z = d3.scaleLinear().range(["papayawhip", "purple"])
+
+// the size of buckets in the CSV data file. 
+var xStep = 1;
+var yStep = 1;
+
+//Create SVG element
+var svg = d3.select("body")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + ", " + margin.top + ")");
+// input dataset
+var newData = []
+var data_2011 = []
+var data_2012 = []
+var data_2013 = []
+var data_2014 = []
+var data_2015 = []
+
+d3.csv("heatmap.csv")
+  .then(function(data) {
+    data.forEach(function(d){
+        for (var key in d){
+            if (key != "Crime Type" && key != "Year"){
+                newData.push({
+                    borough: key,
+                    count: d[key],
+                    crime_type: d["Crime Type"],
+                    year: d.Year
+                })
+            }
+        }
+    });
+    newData.forEach(function(d){
+        //d.borough = +d.borough;
+        d.count = +d.count;
+        //d.crime_type = +d.crime_type;
+        //d.year = +d.year;
+        if(d['year'] == 2011){
+            data_2011.push(d);
+        }else if(d['year'] == 2012){
+            data_2012.push(d);
+        }else if(d['year'] == 2013){
+            data_2013.push(d);
+        }else if(d['year'] == 2014){
+            data_2014.push(d);
+        }else {
+            data_2015.push(d);
+        }
+    });
+
+        update(data_2011);
+});
+    //console.log(data_2011);
+    //console.log(data_2012);
+    //console.log(data_2013);
+
+    var selectBox = [2011, 2012, 2013, 2014, 2015];
+
+    function update(data){
+        x.domain(data.sort(function(a, b){ return d3.ascending(a.crime_type, b.crime_type)})
+                    .map(function(d) { return d.crime_type; })); 
+        y.domain(data.sort(function(a, b){ return d3.descending(a.borough, b.borough)})
+                    .map(function(d) { return d.borough; }));
+        //x.domain(d3.extent(data, function(d){return d.crime_type;}));
+        //y.domain(d3.extent(data, function(d){return d.borough;}));
+        z.domain([0, d3.max(data, function(d){ return d.count;})]).nice();
+        
+        //console.log(x.domain());
+        //console.log(y.domain());
+        //console.log(z.domain());
+
+        svg.selectAll("*").remove();
+
+        //display the tiles
+        var tile = svg.selectAll(".tile")
+            .data(data)
+            .enter()
+            .append('rect')
+            .attr("class", "tile")
+            .attr("x", function(d){
+                return x(d.crime_type);
+            })
+            .attr("y", function(d){
+                return y(d.borough);
+            })
+            .attr("width", x.bandwidth(x.crime_type))
+            .attr("height", y.bandwidth(y.borough))
+            .style("fill", function(d){ return z(d.count)})
+        
+        // add a legend for the color values.
+        var legend = svg.selectAll(".legend")
+            .data(z.ticks(9).slice(1).reverse())
+            .enter().append("g")
+            .attr("class", "legend")
+            .attr("transform", function(d, i){
+                return "translate(" + (width + 20)+ "," + (20 + i*20) + ")";
+            })
+        legend.append("rect")
+            .attr("width", 20)
+            .attr("height", 20)
+            .style("fill", z)
+        legend.append("text")
+            .attr("x", 26)
+            .attr("y", 10)
+            .attr("dy", ".35em")
+            .text(String);
+    
+        // add x-axis with label
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + (height-20) + ")")
+            .call(d3.axisBottom(x))
+            .append("text")
+            .attr("class", "label")
+            .attr("y", -20)
+            .attr("text-anchor", "end")
+            .text("Crime Type");
+        // add y-axis with label
+        svg.append("g")
+            .attr("class", "y axis")
+            //.attr("transform", "translate(0," + (width-20) + ")")
+            .call(d3.axisLeft(y))
+            .append("text")
+            .attr("class", "label")
+            .attr("y", 0)
+            .attr("dy", ".71em")
+            .attr("text-anchor", "end")
+            .text("Borough");
+        //apend the xaxis_label, yaxis_label, and tilte for the graph
+        svg.append("text")
+			.attr("class", "label")
+			.attr("x", -50)
+			.attr("y", margin.top+20)
+			.attr("dy", ".35em")
+			.style("font-weight", "bold")
+			.style("font-size", "16px")
+            .text("Borough");
+        svg.append("text")
+			.attr("class", "label")
+			.attr("x", width-50)
+			.attr("y", 440)
+			.attr("dy", ".35em")
+			.style("font-weight", "bold")
+			.style("font-size", "16px")
+			.text("Crime Type");
+		svg.append("text")
+			.attr("transform", "translate("+(width/2 - 200)+", "+(margin.top)+")")
+			.style("font-weight", "bold")
+			.style("font-size", "20px")
+			.text("Visualizing Crimes in New York City");
+    }
+    
+    //pick a different year from the select box
+    var test = d3.select("#opts")
+            .attr("class", "select")
+            .on("change", function(){
+                var newData = eval(d3.select(this).property("value"));
+                update(newData);
+            })
+
+</script>
+</body>
+</html>
