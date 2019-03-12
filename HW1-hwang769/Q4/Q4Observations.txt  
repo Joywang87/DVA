@@ -1,0 +1,13 @@
+
+i.a :  9953
+
+i.b : 5
+
+ii : "metaphone3", cluster number is 566
+
+iii : if(isNull(cell.value), "Unbranded", cell.value)
+
+iv : if(value.toNumber() > 100, 1, 0)
+
+v : if(or(value.contains("discount"),value.contains("offer"), value.contains("sale")), 1, 0)
+

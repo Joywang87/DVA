@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>hwang769</title>
+        <script type="text/javascript" src="d3/d3.v3.min.js"></script>
+        <style type="text/css">
+            .axis path,
+            .axis line {
+                fill: none;
+                stroke: black;
+                shape-rendering: crispEdges;
+            }
+            .axis text {
+                font-family: sans-serif;
+                font-size: 11px;
+            }
+        </style>
+    </head>
+    <body>
+
+        <script type="text/javascript">
+            var dataset = [];
+            var graph_title = "hwang769";
+            
+            // random number between 10 and 250 (inclusive)
+            var numPoints = 100;
+            var high = 250;
+            var low = 10;
+            for (var i = 0; i < numPoints; i++) {
+                var x_coor = Math.floor(Math.random() * (high - low + 1)) + low;
+                var y_coor = Math.floor(Math.random() * (high - low + 1)) + low;
+                dataset.push([x_coor, y_coor]);
+            }
+            
+            // using linear scale to change the coordinate and radius
+            var linearScale = d3.scale.linear()
+                                .domain([10, 250])
+                                .range([1, 5]);
+
+            // all pll points with a scaled X value greater than the average of the scaled X value of all scatter-plot points should be outlined in blue. 
+            // All other points should be outlined green. 
+
+            var averageX = d3.mean(dataset, function(d){return d[0]; });
+
+            var w = 600;
+            var h = 400;
+            var padding = 30;
+
+            var xScale =  d3.scale.linear()
+                .domain([0, d3.max(dataset, function(d) { return d[0]; })])
+                .range([padding, w - padding * 2]);
+;
+            var yScale = d3.scale.linear()
+                .domain([0, d3.max(dataset, function(d) { return d[1]; })])
+                .range([h - padding * 2, padding]);
+
+
+            //Define x axis and ticks
+            var xAxis = d3.svg.axis()
+                .scale(xScale)
+                .orient("bottom")
+                .ticks(12);
+            //Define Y axis and ticks
+            var yAxis = d3.svg.axis()
+                .scale(yScale)
+                .orient("left")
+                .ticks(12);
+            
+            
+            //Create SVG element
+            var svg = d3.select("body")
+                .append("svg")
+                .attr("width", w)
+                .attr("height", h);    
+            
+            //draw points
+            svg.selectAll("circle")
+               .data(dataset)
+               .enter()
+               .append("circle")
+               .attr("cx", function(d) {
+                    return xScale(d[0]);
+               })
+               .attr("cy", function(d) {
+                    return yScale(d[1]);
+               })
+               .attr("r", function(d){
+                    return (Math.sqrt(linearScale(d[0])*linearScale(d[0]) + linearScale(d[1]) * linearScale(d[1])))
+
+               })
+               .attr("stroke", function(d) {
+                    if (d[0] > averageX) { return "blue"}
+                    else return "green"
+               })
+               .attr("fill", "white")
+               .attr("fill-opacity", 0.2);
+
+            //draw x axis
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(0," + (h - 2*padding) + ")")
+                .call(xAxis);
+            //draw Y axis
+            svg.append("g")
+                .attr("class", "axis")
+                .attr("transform", "translate(" + padding + ",0)")
+                .call(yAxis);
+            svg.append("text")
+                .attr("x", (w/ 2))             
+                .attr("y", 15)
+                .attr("text-anchor", "middle")  
+                .style("font-size", "16px") 
+                .text("hwang769");
+        </script>
+
+    </body>
+</html>

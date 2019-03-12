@@ -1,0 +1,3 @@
+From ‘Layout’ select ‘False Atlas’, set ‘Repulsion strength’ at 1000.0, and select ‘Adjust by Size ’.
+Use ‘Degree Range’ filter to display important nodes labels by setting minimum value = 3.
+Run ‘Modularity’ dividing the nodes into different groups. And applying the modularity class to show the clusters in different colors.
